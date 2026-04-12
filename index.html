@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="FFMICalc"/>
+  <meta name="theme-color" content="#05080f"/>
+  <meta name="description" content="Fat Free Mass Index & Waist-to-Height Ratio Calculator"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
+  <title>FFMI Calc</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #05080f;
+      --bg2:      #090e1a;
+      --bg3:      #0d1525;
+      --bg4:      #111d30;
+      --cyan:     #00d4ff;
+      --cyan-dim: rgba(0,212,255,0.12);
+      --cyan-glow:rgba(0,212,255,0.08);
+      --teal:     #00b4a0;
+      --amber:    #ffb830;
+      --red:      #ff4c4c;
+      --orange:   #ff7c2a;
+      --green:    #2ecc71;
+      --text:     #dce8f5;
+      --muted:    #4a6080;
+      --border:   rgba(0,212,255,0.1);
+      --border2:  rgba(0,212,255,0.2);
+      --mono:     'Barlow Condensed', sans-serif;
+      --body:     'Barlow', sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body { min-height: 100dvh; }
+
+    body {
+      font-family: var(--body);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(40px + var(--safe-bot));
+      overscroll-behavior-y: none;
+    }
+
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+    .grid-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(0,212,255,0.05) 0%, transparent 60%);
+    }
+
+    #app { position: relative; z-index: 1; }
+
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(var(--safe-top) + 14px) 18px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5,8,15,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .logo-wrap { display: flex; align-items: center; gap: 12px; }
+
+    .logo-icon {
+      width: 38px; height: 38px;
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--cyan-dim);
+    }
+
+    .logo-title {
+      font-family: var(--mono);
+      font-size: 22px; font-weight: 800; letter-spacing: 2px;
+      color: var(--text); line-height: 1; text-transform: uppercase;
+    }
+    .logo-title span { color: var(--cyan); }
+
+    .logo-sub {
+      font-family: var(--mono);
+      font-size: 9px; letter-spacing: 2px; color: var(--muted);
+      text-transform: uppercase; margin-top: 2px;
+    }
+
+    .reset-btn {
+      font-family: var(--mono);
+      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); background: none;
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 14px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .reset-btn:active { color: var(--cyan); border-color: var(--cyan); }
+
+    .main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 16px 0;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    .section-head {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--mono);
+      font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .section-head::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border2), transparent);
+    }
+
+    .input-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+
+    .field-label {
+      font-family: var(--mono);
+      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-pre, .input-suf {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-family: var(--mono); font-size: 13px;
+      color: var(--cyan); pointer-events: none; z-index: 1;
+    }
+    .input-pre { left: 11px; }
+    .input-suf { right: 11px; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+    .field-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 20px; font-weight: 500;
+      padding: 11px 12px;
+      outline: none;
+      -webkit-appearance: none; appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-input.has-suf { padding-right: 40px; }
+    .field-input::placeholder { color: var(--muted); font-size: 14px; }
+    .field-input:focus {
+      border-color: var(--border2);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+    .field-input[type=number]::-webkit-outer-spin-button,
+    .field-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .field-input[type=number] { -moz-appearance: textfield; }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .result-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 16px;
+      position: relative; overflow: hidden;
+      animation: slideUp 0.35s ease both;
+    }
+    .result-card.full { grid-column: 1 / -1; }
+    .result-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--card-accent, var(--cyan)); opacity: 0.7;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-label {
+      font-family: var(--mono);
+      font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .card-value {
+      font-family: var(--mono);
+      font-size: 48px; font-weight: 700; line-height: 1;
+      color: var(--card-accent, var(--cyan)); letter-spacing: -1px;
+    }
+    .card-value.small { font-size: 36px; }
+    .card-unit {
+      font-family: var(--mono);
+      font-size: 11px; color: var(--muted);
+      margin-top: 4px; letter-spacing: 1px;
+    }
+
+    .category-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative; overflow: hidden;
+      animation: slideUp 0.4s ease both;
+    }
+    .category-card.full { grid-column: 1 / -1; }
+    .category-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 0% 100%, var(--cat-glow, rgba(0,212,255,0.06)), transparent);
+      pointer-events: none;
+    }
+
+    .cat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .cat-section-label {
+      font-family: var(--mono);
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .cat-pill {
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 99px;
+      border: 1px solid var(--cat-color, var(--cyan));
+      color: var(--cat-color, var(--cyan));
+      background: rgba(0,0,0,0.3);
+    }
+    .cat-name {
+      font-family: var(--mono);
+      font-size: 26px; font-weight: 700;
+      color: var(--cat-color, var(--cyan));
+      line-height: 1.1; margin-bottom: 6px;
+    }
+    .cat-desc {
+      font-family: var(--body);
+      font-size: 12px; color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .scale-wrap { margin-top: 14px; }
+    .scale-track {
+      height: 5px; border-radius: 99px;
+      background: var(--bg4); overflow: visible; position: relative;
+    }
+    .scale-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--teal), var(--cat-color, var(--cyan)));
+      transition: width 0.6s cubic-bezier(0.16,1,0.3,1); max-width: 100%;
+    }
+    .scale-marker {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 11px; height: 11px; border-radius: 50%;
+      background: var(--cat-color, var(--cyan));
+      box-shadow: 0 0 8px var(--cat-color, var(--cyan));
+      transition: left 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .scale-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 9px; color: var(--muted); letter-spacing: 0.5px;
+    }
+
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; padding: 48px 24px; text-align: center;
+    }
+    .empty-title {
+      font-family: var(--mono);
+      font-size: 20px; font-weight: 700; letter-spacing: 1px; color: var(--muted);
+    }
+    .empty-sub { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 260px; }
+    .empty-icon { opacity: 0.4; }
+
+    .disclaimer {
+      font-family: var(--mono);
+      font-size: 9px; color: var(--muted);
+      line-height: 1.6; text-align: center;
+      padding: 14px 8px;
+      border-top: 1px solid var(--border);
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Date + Save row ── */
+    .date-save-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; gap: 12px;
+    }
+    .result-date-wrap { display: flex; flex-direction: column; gap: 3px; }
+    .result-date-label {
+      font-family: var(--mono);
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    }
+    .result-date { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--cyan); }
+
+    .save-btn {
+      font-family: var(--mono);
+      font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+      background: var(--cyan); color: #05080f;
+      border: none; border-radius: 8px;
+      padding: 10px 18px; cursor: pointer; font-weight: 700;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .save-btn:active { transform: scale(0.97); }
+    .save-btn:disabled { opacity: 0.5; cursor: default; }
+
+    .storage-panel {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .storage-meta { display: flex; justify-content: space-between; align-items: center; }
+    .storage-count { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--cyan); }
+    .storage-used { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+    .storage-track { height: 4px; border-radius: 99px; background: var(--bg4); overflow: hidden; }
+    .storage-fill { height: 100%; border-radius: 99px; background: var(--cyan); transition: width 0.5s ease, background 0.3s; }
+
+    .history-actions { display: flex; gap: 8px; }
+    .action-btn {
+      flex: 1; font-family: var(--mono);
+      font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 9px 12px; border-radius: 8px; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      border: none; font-weight: 600;
+    }
+    .action-btn:active { transform: scale(0.97); }
+    .export-btn  { background: rgba(0,212,255,0.15); color: var(--cyan);  border: 1px solid rgba(0,212,255,0.3); }
+    .clear-log-btn { background: rgba(255,76,76,0.1); color: #ff6b6b; border: 1px solid rgba(255,76,76,0.25); }
+
+    .history-empty {
+      font-family: var(--mono); font-size: 11px; color: var(--muted);
+      text-align: center; padding: 20px 16px;
+      border: 1px dashed var(--border); border-radius: 12px; line-height: 1.6;
+    }
+
+    .table-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    .history-table {
+      width: 100%; border-collapse: collapse;
+      font-family: var(--mono); font-size: 11px; min-width: 520px;
+    }
+    .history-table thead tr { background: var(--bg3); border-bottom: 1px solid var(--border2); }
+    .history-table th {
+      padding: 9px 10px; text-align: left;
+      font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted); white-space: nowrap; font-weight: 600;
+    }
+    .history-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    .history-table tbody tr:last-child { border-bottom: none; }
+    .history-table tbody tr:hover { background: var(--bg3); }
+    .history-table td { padding: 9px 10px; color: var(--text); white-space: nowrap; }
+    .history-table td.num { color: var(--cyan); }
+    .history-table td.cat-cell { color: var(--text); font-size: 10px; }
+
+    .del-btn {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 12px; padding: 2px 6px; border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .del-btn:hover { color: #ff4c4c; background: rgba(255,76,76,0.1); }
+
+    /* ── Body Symmetry Section ── */
+    .symmetry-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      animation: slideUp 0.4s ease both;
+    }
+
+    .symmetry-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+
+    .symmetry-header-left { display: flex; flex-direction: column; gap: 3px; }
+
+    .symmetry-title {
+      font-family: var(--mono);
+      font-size: 15px; font-weight: 700; letter-spacing: 1px;
+      color: var(--text); text-transform: uppercase;
+    }
+
+    .symmetry-ppi {
+      font-family: var(--mono);
+      font-size: 11px; color: var(--muted); letter-spacing: 0.5px;
+    }
+
+    .symmetry-ppi span { color: var(--cyan); font-size: 13px; font-weight: 600; }
+
+    .sym-legend {
+      display: flex; gap: 10px; align-items: center; flex-shrink: 0;
+    }
+
+    .sym-legend-item {
+      display: flex; align-items: center; gap: 4px;
+      font-family: var(--mono); font-size: 9px; letter-spacing: 1px; color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .sym-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .sym-dot.green { background: var(--green); }
+    .sym-dot.amber { background: var(--amber); }
+    .sym-dot.red   { background: var(--red); }
+
+    /* symmetry measurement rows */
+    .sym-rows { padding: 8px 0; }
+
+    .sym-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 80px 80px;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-bottom: 1px solid rgba(0,212,255,0.05);
+      transition: background 0.1s;
+    }
+    .sym-row:last-child { border-bottom: none; }
+    .sym-row:hover { background: rgba(0,212,255,0.02); }
+
+    .sym-part {
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .sym-target-wrap {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+
+    .sym-target-val {
+      font-family: var(--mono);
+      font-size: 15px; font-weight: 600; color: var(--cyan);
+    }
+
+    .sym-target-label {
+      font-family: var(--mono);
+      font-size: 8px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+    }
+
+    .sym-input-wrap { position: relative; }
+
+    .sym-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 16px; font-weight: 500;
+      padding: 8px 10px;
+      outline: none;
+      -webkit-appearance: none; appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .sym-input::placeholder { color: var(--muted); font-size: 12px; }
+    .sym-input:focus {
+      border-color: var(--border2);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+    .sym-input[type=number]::-webkit-outer-spin-button,
+    .sym-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .sym-input[type=number] { -moz-appearance: textfield; }
+
+    /* variance badge */
+    .sym-variance {
+      font-family: var(--mono);
+      font-size: 13px; font-weight: 600;
+      text-align: right;
+      letter-spacing: 0.5px;
+      transition: color 0.2s;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+    }
+
+    .sym-var-val { font-size: 14px; font-weight: 700; }
+    .sym-var-pct { font-size: 9px; letter-spacing: 1px; opacity: 0.75; }
+
+    .sym-variance.green .sym-var-val { color: var(--green); }
+    .sym-variance.amber .sym-var-val { color: var(--amber); }
+    .sym-variance.red   .sym-var-val { color: var(--red); }
+    .sym-variance.green .sym-var-pct { color: var(--green); }
+    .sym-variance.amber .sym-var-pct { color: var(--amber); }
+    .sym-variance.red   .sym-var-pct { color: var(--red); }
+    .sym-variance.none  .sym-var-val { color: var(--muted); }
+
+    /* col headers */
+    .sym-col-heads {
+      display: grid;
+      grid-template-columns: 90px 1fr 80px 80px;
+      gap: 8px;
+      padding: 6px 18px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+    .sym-col-head {
+      font-family: var(--mono);
+      font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .sym-col-head:nth-child(3) { text-align: center; }
+    .sym-col-head:nth-child(4) { text-align: right; }
+
+    /* overall score */
+    .sym-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--bg3);
+    }
+    .sym-score-label {
+      font-family: var(--mono);
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    }
+    .sym-score-wrap { display: flex; align-items: center; gap: 10px; }
+    .sym-score-bar {
+      width: 100px; height: 5px; border-radius: 99px; background: var(--bg4);
+      overflow: hidden;
+    }
+    .sym-score-fill {
+      height: 100%; border-radius: 99px;
+      transition: width 0.5s ease, background 0.3s;
+    }
+    .sym-score-val {
+      font-family: var(--mono);
+      font-size: 18px; font-weight: 700; min-width: 50px; text-align: right;
+    }
+
+    .hidden { display: none !important; }
+    * { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div id="app">
+    <header class="app-header">
+      <div class="logo-wrap">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="6" r="3.5" stroke="#00d4ff" stroke-width="1.5"/>
+            <path d="M4 19c0-3.866 3.134-7 7-7h2c3.866 0 7 3.134 7 7" stroke="#00b4a0" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="19" x2="18" y2="19" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="19" x2="4" y2="17" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="18" y1="19" x2="18" y2="17" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-title">FFMI<span>Calc</span></div>
+          <div class="logo-sub">Body Composition</div>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetAll()">Reset</button>
+    </header>
+
+    <div class="main">
+
+      <!-- INPUTS -->
+      <div class="section-head">Measurements</div>
+      <div class="input-panel">
+        <div class="input-grid">
+          <div class="field">
+            <div class="field-label">Height</div>
+            <div class="input-wrap">
+              <input class="field-input has-suf" type="number" id="height" placeholder="70" min="48" max="96" step="0.5" oninput="compute()"/>
+              <span class="input-suf">in</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">Weight</div>
+            <div class="input-wrap">
+              <input class="field-input has-suf" type="number" id="weight" placeholder="185" min="60" max="500" step="0.5" oninput="compute()"/>
+              <span class="input-suf">lb</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">Body Fat %</div>
+            <div class="input-wrap">
+              <input class="field-input has-suf" type="number" id="bf" placeholder="15" min="2" max="60" step="0.1" oninput="compute()"/>
+              <span class="input-suf">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">Waist</div>
+            <div class="input-wrap">
+              <input class="field-input has-suf" type="number" id="waist" placeholder="34" min="18" max="80" step="0.25" oninput="compute()"/>
+              <span class="input-suf">in</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="results-section" class="hidden">
+        <div class="date-save-row">
+          <div class="result-date-wrap">
+            <div class="result-date-label">Today</div>
+            <div class="result-date" id="result-date"></div>
+          </div>
+          <button class="save-btn" onclick="saveEntry()">Save to Log</button>
+        </div>
+        <div class="results-grid" id="results-grid"></div>
+      </div>
+
+      <!-- BODY SYMMETRY -->
+      <div id="symmetry-section" class="hidden">
+        <div class="section-head" style="margin-bottom:0">Body Symmetry</div>
+        <div class="symmetry-panel" id="symmetry-panel">
+          <div class="symmetry-header">
+            <div class="symmetry-header-left">
+              <div class="symmetry-title">Ideal Proportions</div>
+              <div class="symmetry-ppi">lbs/inch: <span id="ppi-display">—</span></div>
+            </div>
+            <div class="sym-legend">
+              <div class="sym-legend-item"><div class="sym-dot green"></div>≤5%</div>
+              <div class="sym-legend-item"><div class="sym-dot amber"></div>≤10%</div>
+              <div class="sym-legend-item"><div class="sym-dot red"></div>&gt;10%</div>
+            </div>
+          </div>
+          <div class="sym-col-heads">
+            <div class="sym-col-head">Part</div>
+            <div class="sym-col-head">Target (in)</div>
+            <div class="sym-col-head">Actual (in)</div>
+            <div class="sym-col-head">Variance</div>
+          </div>
+          <div class="sym-rows" id="sym-rows"></div>
+          <div class="sym-footer" id="sym-footer" style="display:none">
+            <div class="sym-score-label">Symmetry Score</div>
+            <div class="sym-score-wrap">
+              <div class="sym-score-bar">
+                <div class="sym-score-fill" id="sym-score-fill"></div>
+              </div>
+              <div class="sym-score-val" id="sym-score-val">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div id="history-section" class="hidden">
+        <div class="section-head">Log</div>
+        <div class="storage-panel">
+          <div class="storage-meta">
+            <span class="storage-count" id="storage-count">0 entries</span>
+            <span class="storage-used" id="storage-used">0 KB used</span>
+          </div>
+          <div class="storage-track"><div class="storage-fill" id="storage-fill" style="width:0%"></div></div>
+          <div class="history-actions">
+            <button class="action-btn export-btn" onclick="exportCSV()">Export CSV</button>
+            <button class="action-btn clear-log-btn" onclick="clearLog()">Clear Log</button>
+          </div>
+        </div>
+        <div id="history-list"></div>
+      </div>
+
+      <div class="disclaimer">
+        FFMI &amp; WHtR are informational metrics only. Not medical advice.<br>
+        Body symmetry targets based on Steve Reeves' proportions table.
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ── Body Symmetry Table (lbs/in ratio → target measurements in inches) ──
+  const SYMMETRY_TABLE = [
+    { ppi: 1.90, neck: 14,    chest: 36.4,  biceps: 13.1,  forearm: 10.9,  waist: 27.3,  hips: 32.8,  thigh: 19.7,  calf: 13.1  },
+    { ppi: 1.97, neck: 14.25, chest: 37.15, biceps: 13.35, forearm: 11.1,  waist: 27.85, hips: 33.45, thigh: 20.05, calf: 13.35 },
+    { ppi: 2.04, neck: 14.5,  chest: 37.9,  biceps: 13.6,  forearm: 11.3,  waist: 28.4,  hips: 34.1,  thigh: 20.4,  calf: 13.6  },
+    { ppi: 2.11, neck: 14.75, chest: 38.6,  biceps: 13.85, forearm: 11.55, waist: 28.9,  hips: 34.7,  thigh: 20.8,  calf: 13.85 },
+    { ppi: 2.18, neck: 15,    chest: 39.3,  biceps: 14.1,  forearm: 11.8,  waist: 29.4,  hips: 35.3,  thigh: 21.2,  calf: 14.1  },
+    { ppi: 2.26, neck: 15.3,  chest: 40,    biceps: 14.35, forearm: 12,    waist: 29.7,  hips: 35.95, thigh: 21.6,  calf: 14.35 },
+    { ppi: 2.33, neck: 15.6,  chest: 40.7,  biceps: 14.6,  forearm: 12.2,  waist: 30,    hips: 36.6,  thigh: 22,    calf: 14.6  },
+    { ppi: 2.41, neck: 15.85, chest: 41.4,  biceps: 14.85, forearm: 12.4,  waist: 30.8,  hips: 37.25, thigh: 22.35, calf: 14.85 },
+    { ppi: 2.49, neck: 16.1,  chest: 42.1,  biceps: 15.1,  forearm: 12.6,  waist: 31.6,  hips: 37.9,  thigh: 22.7,  calf: 15.1  },
+    { ppi: 2.57, neck: 16.4,  chest: 42.8,  biceps: 15.4,  forearm: 12.85, waist: 32.1,  hips: 38.55, thigh: 23.1,  calf: 15.4  },
+    { ppi: 2.65, neck: 16.7,  chest: 43.5,  biceps: 15.7,  forearm: 13.1,  waist: 32.6,  hips: 39.2,  thigh: 23.5,  calf: 15.7  },
+    { ppi: 2.73, neck: 16.95, chest: 44.25, biceps: 15.95, forearm: 13.3,  waist: 33.15, hips: 39.85, thigh: 23.9,  calf: 15.95 },
+    { ppi: 2.82, neck: 17.2,  chest: 45,    biceps: 16.2,  forearm: 13.5,  waist: 33.7,  hips: 40.5,  thigh: 24.3,  calf: 16.2  },
+    { ppi: 2.90, neck: 17.5,  chest: 45.7,  biceps: 16.45, forearm: 13.7,  waist: 34.25, hips: 41.1,  thigh: 24.65, calf: 16.45 },
+    { ppi: 2.99, neck: 17.8,  chest: 46.4,  biceps: 16.7,  forearm: 13.9,  waist: 34.8,  hips: 41.7,  thigh: 25,    calf: 16.7  },
+    { ppi: 3.09, neck: 18.05, chest: 47.2,  biceps: 17,    forearm: 14.15, waist: 35.4,  hips: 42.45, thigh: 25.45, calf: 17    },
+    { ppi: 3.20, neck: 18.3,  chest: 48,    biceps: 17.3,  forearm: 14.4,  waist: 36,    hips: 43.2,  thigh: 25.9,  calf: 17.3  },
+    { ppi: 3.29, neck: 18.55, chest: 48.7,  biceps: 17.55, forearm: 14.6,  waist: 36.55, hips: 43.85, thigh: 26.3,  calf: 17.55 },
+    { ppi: 3.38, neck: 18.8,  chest: 49.4,  biceps: 17.8,  forearm: 14.8,  waist: 37.1,  hips: 44.5,  thigh: 26.7,  calf: 17.8  },
+  ];
+
+  const PARTS = [
+    { key: 'neck',    label: 'Neck'    },
+    { key: 'chest',   label: 'Chest'   },
+    { key: 'biceps',  label: 'Biceps'  },
+    { key: 'forearm', label: 'Forearm' },
+    { key: 'waist',   label: 'Waist'   },
+    { key: 'hips',    label: 'Hips'    },
+    { key: 'thigh',   label: 'Thigh'   },
+    { key: 'calf',    label: 'Calf'    },
+  ];
+
+  // ── State ──
+  let currentPPI = null;
+  let currentRow = null;
+
+  function getSymmetryRow(ppi) {
+    let best = SYMMETRY_TABLE[0];
+    let bestDiff = Math.abs(ppi - best.ppi);
+    for (const row of SYMMETRY_TABLE) {
+      const diff = Math.abs(ppi - row.ppi);
+      if (diff < bestDiff) { bestDiff = diff; best = row; }
+    }
+    return best;
+  }
+
+  function varColor(pct) {
+    const abs = Math.abs(pct);
+    if (abs <= 5)  return 'green';
+    if (abs <= 10) return 'amber';
+    return 'red';
+  }
+
+  function buildSymmetryRows() {
+    const container = document.getElementById('sym-rows');
+    container.innerHTML = '';
+    PARTS.forEach(({ key, label }) => {
+      const row = document.createElement('div');
+      row.className = 'sym-row';
+      row.innerHTML = `
+        <div class="sym-part">${label}</div>
+        <div class="sym-target-wrap">
+          <div class="sym-target-val" id="sym-target-${key}">—</div>
+          <div class="sym-target-label">target</div>
+        </div>
+        <div class="sym-input-wrap">
+          <input class="sym-input" type="number" id="sym-input-${key}"
+            placeholder="—" min="4" max="80" step="0.25"
+            oninput="updateVariance('${key}')"/>
+        </div>
+        <div class="sym-variance none" id="sym-var-${key}">
+          <div class="sym-var-val">—</div>
+          <div class="sym-var-pct"></div>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function updateTargets() {
+    if (!currentRow) return;
+    PARTS.forEach(({ key }) => {
+      const el = document.getElementById(`sym-target-${key}`);
+      if (el) el.textContent = currentRow[key].toFixed(2);
+      updateVariance(key);
+    });
+  }
+
+  function updateVariance(key) {
+    if (!currentRow) return;
+    const input = document.getElementById(`sym-input-${key}`);
+    const varEl = document.getElementById(`sym-var-${key}`);
+    const valEl = varEl.querySelector('.sym-var-val');
+    const pctEl = varEl.querySelector('.sym-var-pct');
+    const actual = parseFloat(input.value);
+    if (isNaN(actual) || input.value === '') {
+      varEl.className = 'sym-variance none';
+      valEl.textContent = '—';
+      pctEl.textContent = '';
+      updateScore();
+      return;
+    }
+    const target = currentRow[key];
+    const diff = actual - target;
+    const pct  = (diff / target) * 100;
+    const cls  = varColor(pct);
+    varEl.className = `sym-variance ${cls}`;
+    valEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2);
+    pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    updateScore();
+  }
+
+  function updateScore() {
+    let filled = 0, greenCount = 0;
+    PARTS.forEach(({ key }) => {
+      const input = document.getElementById(`sym-input-${key}`);
+      if (!input || input.value === '' || isNaN(parseFloat(input.value))) return;
+      filled++;
+      const target = currentRow[key];
+      const pct = Math.abs((parseFloat(input.value) - target) / target * 100);
+      if (pct <= 5) greenCount++;
+    });
+
+    const footer = document.getElementById('sym-footer');
+    const fill   = document.getElementById('sym-score-fill');
+    const val    = document.getElementById('sym-score-val');
+
+    if (filled === 0) {
+      footer.style.display = 'none';
+      return;
+    }
+
+    footer.style.display = 'flex';
+    const score = Math.round((greenCount / filled) * 100);
+    fill.style.width = score + '%';
+    val.textContent  = score + '%';
+
+    let fillColor;
+    if (score >= 75) fillColor = 'var(--green)';
+    else if (score >= 50) fillColor = 'var(--amber)';
+    else fillColor = 'var(--red)';
+    fill.style.background = fillColor;
+    val.style.color = fillColor;
+  }
+
+  // ── FFMI & WHtR core ──
+  const FFMI_CATS = [
+    { max: 16,   name: 'Below Average',  desc: 'Muscle mass is below typical range.',          color: '#6b7da0', glow: 'rgba(107,125,160,0.06)', scale: 10  },
+    { max: 17.9, name: 'Average',        desc: 'Typical muscle mass for an active person.',    color: '#00b4a0', glow: 'rgba(0,180,160,0.06)',   scale: 28  },
+    { max: 19.9, name: 'Above Average',  desc: 'Good lean mass — dedicated training shows.',   color: '#00d4ff', glow: 'rgba(0,212,255,0.06)',   scale: 52  },
+    { max: 21.9, name: 'Excellent',      desc: 'Very high lean mass — serious athlete.',        color: '#00e5c0', glow: 'rgba(0,229,192,0.06)',   scale: 72  },
+    { max: 23.9, name: 'Superior',       desc: 'Elite natural physique.',                       color: '#ffb830', glow: 'rgba(255,184,48,0.06)',  scale: 88  },
+    { max: 999,  name: 'Suspiciously High', desc: 'Exceeds typical natural limits.',            color: '#ff4c4c', glow: 'rgba(255,76,76,0.06)',   scale: 100 },
+  ];
+
+  const WHTR_CATS = [
+    { max: 0.4,  name: 'Very Slim',  desc: 'Ratio below typical healthy range.',     color: '#6b7da0' },
+    { max: 0.5,  name: 'Healthy',    desc: 'Healthy abdominal proportion.',           color: '#2ecc71' },
+    { max: 0.6,  name: 'Overweight', desc: 'Elevated abdominal fat risk.',            color: '#ffb830' },
+    { max: 999,  name: 'Obese',      desc: 'High cardiovascular risk.',               color: '#ff4c4c' },
+  ];
+
+  function ffmiCat(v)  { return FFMI_CATS.find(c => v <= c.max)  || FFMI_CATS.at(-1); }
+  function whtrCat(v)  { return WHTR_CATS.find(c => v <= c.max)  || WHTR_CATS.at(-1); }
+
+  function compute() {
+    const h   = parseFloat(document.getElementById('height').value);
+    const w   = parseFloat(document.getElementById('weight').value);
+    const bf  = parseFloat(document.getElementById('bf').value);
+    const wst = parseFloat(document.getElementById('waist').value);
+
+    const hasCore = !isNaN(h) && !isNaN(w) && h > 0 && w > 0;
+    const hasBF   = !isNaN(bf)  && bf  > 0 && bf  < 100;
+    const hasWaist= !isNaN(wst) && wst > 0;
+
+    if (!hasCore) {
+      document.getElementById('results-section').classList.add('hidden');
+      document.getElementById('symmetry-section').classList.add('hidden');
+      return;
+    }
+
+    // PPI → symmetry
+    const ppi = w / h;
+    currentPPI = ppi;
+    currentRow = getSymmetryRow(ppi);
+    document.getElementById('ppi-display').textContent = ppi.toFixed(3);
+    updateTargets();
+    document.getElementById('symmetry-section').classList.remove('hidden');
+
+    // FFMI
+    const hm  = h * 0.0254;
+    const wkg = w * 0.453592;
+    const lbm = hasBF ? wkg * (1 - bf / 100) : null;
+    const ffmi= lbm  ? (lbm / (hm * hm)) + 6.1 * (1.8 - hm) : null;
+    const whtr= hasWaist ? (wst / h) : null;
+
+    const grid = document.getElementById('results-grid');
+    grid.innerHTML = '';
+
+    const cards = [];
+
+    // Lbs/in card
+    cards.push({ label: 'Lbs per Inch', value: ppi.toFixed(2), unit: 'lbs / in', accent: 'var(--teal)', full: false });
+
+    if (ffmi !== null) {
+      const cat = ffmiCat(ffmi);
+      cards.push({ label: 'FFMI', value: ffmi.toFixed(1), unit: 'normalised', accent: cat.color, full: false });
+    }
+    if (whtr !== null) {
+      const cat = whtrCat(whtr);
+      cards.push({ label: 'WHtR', value: whtr.toFixed(3), unit: 'waist-to-height', accent: cat.color, full: false });
+    }
+    if (lbm !== null) {
+      cards.push({ label: 'Lean Mass', value: (lbm / 0.453592).toFixed(1), unit: 'pounds', accent: 'var(--cyan)', full: false });
+    }
+
+    cards.forEach(c => {
+      const div = document.createElement('div');
+      div.className = `result-card${c.full ? ' full' : ''}`;
+      div.style.setProperty('--card-accent', c.accent);
+      div.innerHTML = `
+        <div class="card-label">${c.label}</div>
+        <div class="card-value${c.value.length > 5 ? ' small' : ''}">${c.value}</div>
+        <div class="card-unit">${c.unit}</div>
+      `;
+      grid.appendChild(div);
+    });
+
+    // Category cards
+    if (ffmi !== null) {
+      const cat = ffmiCat(ffmi);
+      const catDiv = document.createElement('div');
+      catDiv.className = 'category-card full';
+      catDiv.style.setProperty('--cat-color', cat.color);
+      catDiv.style.setProperty('--cat-glow', cat.glow);
+      catDiv.innerHTML = `
+        <div class="cat-header">
+          <div class="cat-section-label">FFMI Category</div>
+          <div class="cat-pill">${cat.name}</div>
+        </div>
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-desc">${cat.desc}</div>
+        <div class="scale-wrap">
+          <div class="scale-track">
+            <div class="scale-fill" style="width:${cat.scale}%"></div>
+            <div class="scale-marker" style="left:${cat.scale}%"></div>
+          </div>
+          <div class="scale-labels"><span>Below Avg</span><span>Average</span><span>Superior</span></div>
+        </div>
+      `;
+      grid.appendChild(catDiv);
+    }
+
+    if (whtr !== null) {
+      const cat = whtrCat(whtr);
+      const scale = Math.min(whtr / 0.7 * 100, 100);
+      const catDiv = document.createElement('div');
+      catDiv.className = 'category-card full';
+      catDiv.style.setProperty('--cat-color', cat.color);
+      catDiv.style.setProperty('--cat-glow', 'rgba(0,0,0,0)');
+      catDiv.innerHTML = `
+        <div class="cat-header">
+          <div class="cat-section-label">WHtR Category</div>
+          <div class="cat-pill">${cat.name}</div>
+        </div>
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-desc">${cat.desc}</div>
+        <div class="scale-wrap">
+          <div class="scale-track">
+            <div class="scale-fill" style="width:${scale}%"></div>
+            <div class="scale-marker" style="left:${scale}%"></div>
+          </div>
+          <div class="scale-labels"><span>Very Slim</span><span>Healthy</span><span>Obese</span></div>
+        </div>
+      `;
+      grid.appendChild(catDiv);
+    }
+
+    document.getElementById('result-date').textContent = new Date().toLocaleDateString('en-CA');
+    document.getElementById('results-section').classList.remove('hidden');
+    renderHistory();
+  }
+
+  // ── History ──
+  const HISTORY_KEY = 'ffmicalc_history_v3';
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+  }
+  function saveEntry() {
+    const h   = parseFloat(document.getElementById('height').value);
+    const w   = parseFloat(document.getElementById('weight').value);
+    const bf  = parseFloat(document.getElementById('bf').value);
+    const wst = parseFloat(document.getElementById('waist').value);
+    if (isNaN(h) || isNaN(w)) return;
+    const hm  = h * 0.0254;
+    const wkg = w * 0.453592;
+    const lbm = !isNaN(bf) && bf > 0 ? wkg * (1 - bf / 100) : null;
+    const ffmi= lbm ? (lbm / (hm * hm)) + 6.1 * (1.8 - hm) : null;
+    const whtr= !isNaN(wst) && wst > 0 ? wst / h : null;
+    const entry = {
+      date: new Date().toLocaleDateString('en-CA'),
+      h, w, bf: isNaN(bf) ? null : bf,
+      wst: isNaN(wst) ? null : wst,
+      ffmi: ffmi ? +ffmi.toFixed(2) : null,
+      whtr: whtr ? +whtr.toFixed(3) : null,
+      ppi:  +(w/h).toFixed(3),
+    };
+    const hist = getHistory();
+    hist.unshift(entry);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 100)));
+    renderHistory();
+  }
+
+  function deleteEntry(idx) {
+    const hist = getHistory();
+    hist.splice(idx, 1);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+    renderHistory();
+  }
+
+  function clearLog() {
+    if (!confirm('Clear all log entries?')) return;
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  }
+
+  function exportCSV() {
+    const hist = getHistory();
+    if (!hist.length) return;
+    const rows = [['Date','Height(in)','Weight(lb)','BF%','Waist(in)','FFMI','WHtR','lbs/in']];
+    hist.forEach(e => rows.push([e.date,e.h,e.w,e.bf??'',e.wst??'',e.ffmi??'',e.whtr??'',e.ppi]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'ffmi_log.csv';
+    a.click();
+  }
+
+  function renderHistory() {
+    const hist = getHistory();
+    const sec  = document.getElementById('history-section');
+    const list = document.getElementById('history-list');
+    const cnt  = document.getElementById('storage-count');
+    const used = document.getElementById('storage-used');
+    const fill = document.getElementById('storage-fill');
+
+    const raw = localStorage.getItem(HISTORY_KEY) || '[]';
+    const kb  = (new Blob([raw]).size / 1024).toFixed(1);
+    const pct = Math.min((kb / 50) * 100, 100);
+
+    cnt.textContent  = `${hist.length} entr${hist.length !== 1 ? 'ies' : 'y'}`;
+    used.textContent = `${kb} KB used`;
+    fill.style.width = pct + '%';
+    fill.style.background = pct > 80 ? 'var(--red)' : pct > 60 ? 'var(--amber)' : 'var(--cyan)';
+
+    if (!hist.length) {
+      list.innerHTML = '<div class="history-empty">No entries saved yet.<br>Enter your stats and tap Save.</div>';
+      sec.classList.remove('hidden');
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="table-scroll">
+        <table class="history-table">
+          <thead><tr>
+            <th>Date</th><th>Ht</th><th>Wt</th><th>BF%</th>
+            <th>FFMI</th><th>WHtR</th><th>lb/in</th><th></th>
+          </tr></thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>`;
+
+    const tbody = list.querySelector('#history-tbody');
+    hist.forEach((e, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td class="num">${e.h}"</td>
+        <td class="num">${e.w}lb</td>
+        <td class="num">${e.bf != null ? e.bf+'%' : '—'}</td>
+        <td class="num">${e.ffmi ?? '—'}</td>
+        <td class="num">${e.whtr ?? '—'}</td>
+        <td class="num">${e.ppi}</td>
+        <td><button class="del-btn" onclick="deleteEntry(${i})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    sec.classList.remove('hidden');
+  }
+
+  function resetAll() {
+    ['height','weight','bf','waist'].forEach(id => document.getElementById(id).value = '');
+    PARTS.forEach(({ key }) => {
+      const inp = document.getElementById(`sym-input-${key}`);
+      if (inp) inp.value = '';
+    });
+    document.getElementById('results-section').classList.add('hidden');
+    document.getElementById('symmetry-section').classList.add('hidden');
+    currentPPI = null;
+    currentRow = null;
+    updateScore();
+  }
+
+  // ── Init ──
+  buildSymmetryRows();
+  renderHistory();
+
+  // Register SW
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+  </script>
+</body>
+</html>
